@@ -178,9 +178,10 @@ if __name__ == "__main__":
     args = parse_args()
     cfg = load_config(args.config)
 
-    setup_logger(
-        level=cfg.get("logging", {}).get("level", "INFO"),
-        log_file=cfg.get("logging", {}).get("log_file"),
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
 
     run_pipeline(cfg)

@@ -14,7 +14,7 @@ from typing import Optional
 
 import torch
 import torch.nn as nn
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
@@ -91,7 +91,7 @@ class Trainer:
 
         self.optimizer = AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
         self.criterion = nn.BCEWithLogitsLoss()
-        self.scaler = GradScaler(enabled=mixed_precision and self.device.type == "cuda")
+        self.scaler = GradScaler("cuda", enabled=mixed_precision and self.device.type == "cuda")
         self.early_stopping = EarlyStopping(patience=patience, mode="max")
 
         logger.info(f"Trainer initialised on device: {self.device}")
@@ -137,7 +137,8 @@ class Trainer:
             )
 
             # Checkpoint best model
-            if self.early_stopping.best_score == val_auc:
+            if (self.early_stopping.best_score is not None and
+                    round(self.early_stopping.best_score, 6) == round(val_auc, 6)):
                 self._save_checkpoint(epoch, val_auc)
 
             if self.early_stopping(val_auc):
@@ -152,7 +153,10 @@ class Trainer:
     def load_best(self) -> None:
         """Load the best checkpoint back into the model."""
         ckpt_path = self.output_dir / "best_model.pt"
-        state = torch.load(ckpt_path, map_location=self.device)
+        if not ckpt_path.exists():
+            logger.warning("No checkpoint found — using current model weights.")
+            return
+        state = torch.load(ckpt_path, map_location=self.device, weights_only=True)
         self.model.load_state_dict(state["model_state_dict"])
         logger.info(
             f"Loaded best checkpoint (epoch {state['epoch']}, "
@@ -173,7 +177,7 @@ class Trainer:
 
             self.optimizer.zero_grad()
 
-            with autocast(enabled=self.scaler.is_enabled()):
+            with autocast(device_type=self.device.type, enabled=self.scaler.is_enabled()):
                 logits, entropy_loss = self.model(X_batch)
                 bce = self.criterion(logits.squeeze(1), y_batch)
                 loss = bce + self.sparse_lambda * entropy_loss

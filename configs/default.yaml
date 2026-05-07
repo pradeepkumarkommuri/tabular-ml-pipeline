@@ -6,8 +6,8 @@ project:
 data:
   path: data/raw/dataset.csv
   target: label
-  categorical_features: []      # e.g. ["gender", "category"]
-  numerical_features: []        # leave empty to auto-detect
+  categorical_features: ["education", "occupation", "marital_status"]
+  numerical_features: ["age", "income", "hours_per_week", "capital_gain", "capital_loss"]
   test_size: 0.2
   val_size: 0.1
   drop_duplicates: true
