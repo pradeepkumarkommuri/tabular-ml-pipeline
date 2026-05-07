@@ -34,10 +34,17 @@ class TestTabNet:
         assert model.num_parameters > 0
 
     def test_different_batch_sizes(self, model):
-        for batch_size in [1, 4, 64, 256]:
+        # batch_size=1 requires eval mode (BatchNorm needs >1 sample during training)
+        for batch_size in [4, 64, 256]:
             x = torch.randn(batch_size, 10)
             logits, _ = model(x)
             assert logits.shape[0] == batch_size
+
+        model.eval()
+        with torch.no_grad():
+            x = torch.randn(1, 10)
+            logits, _ = model(x)
+            assert logits.shape[0] == 1
 
     def test_gradient_flow(self, model):
         x = torch.randn(8, 10)
