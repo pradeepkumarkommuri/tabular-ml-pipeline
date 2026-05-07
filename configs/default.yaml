@@ -1,0 +1,36 @@
+project:
+  name: tabular-ml-pipeline
+  seed: 42
+  output_dir: outputs/
+
+data:
+  path: data/raw/dataset.csv
+  target: label
+  categorical_features: []      # e.g. ["gender", "category"]
+  numerical_features: []        # leave empty to auto-detect
+  test_size: 0.2
+  val_size: 0.1
+  drop_duplicates: true
+  fill_strategy: median         # median | mean | mode | constant
+
+model:
+  type: tabnet                  # tabnet | xgboost
+  hidden_dim: 128
+  num_layers: 4
+  dropout: 0.3
+  num_attention_steps: 3        # TabNet-specific
+  gamma: 1.3                    # TabNet feature reuse coefficient
+
+training:
+  epochs: 100
+  batch_size: 512
+  lr: 1.0e-3
+  weight_decay: 1.0e-5
+  scheduler: cosine             # cosine | step | none
+  early_stopping_patience: 10
+  checkpoint_metric: val_auc
+  mixed_precision: true
+
+logging:
+  level: INFO
+  log_file: outputs/run.log
